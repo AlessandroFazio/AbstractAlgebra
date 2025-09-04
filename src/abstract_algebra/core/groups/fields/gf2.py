@@ -8,6 +8,8 @@ class GF2(Field[int]):
     def __init__(self, k: int, q: int) -> None:
         if k < 1:
             raise ValueError("")
+        if not BinaryUtils.bit_at(q, k):
+            raise ValueError("")
         self.k = k
         self.q = q
     
@@ -116,7 +118,7 @@ class GF2Elem(FieldElem[int]):
         return other is self or (isinstance(other, GF2Elem) and self.x == other.x)
     
     def copy(self) -> "Self":
-        return GF2Elem(self.x, self)
+        return GF2Elem(self.x, self.field)
     
     def to_str(self) -> str:
         return f"GF2({self.x})"
