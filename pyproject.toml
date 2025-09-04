@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "abstract_algebra"
+version = "0.1.0"
+description = ""
+authors = ["Fazio Alessandro 3 (EXT Spindox) <alessandro.fazio@spindox.it>"]
+readme = "README.md"
+packages = [{ include = "abstract_algebra", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+cloup = "^3.0.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+abstract-algebra = "abstract_algebra.cli.cli:run"
