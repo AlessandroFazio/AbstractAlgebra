@@ -1,33 +1,75 @@
-from typing import TypeVar, Union, Any, List, Tuple
+import math
+from typing import Generic, TypeVar, Union, Any, List, Tuple
 from typing_extensions import Self
-from abstract_algebra.core.groups.fields.base import Field, FieldElem
-from abstract_algebra.core.groups.rings.base import RingElem
+from abstract_algebra.core.fields.base import Field, FieldElem
+from abstract_algebra.core.rings.base import Ring, RingElem
 
 
-T = TypeVar('T')
+T = TypeVar('T', bound=FieldElem)
 
-class Matrix(RingElem[T]):
-    def __init__(self, rows: int, cols: int, data: List[FieldElem[T]], coeff_field: Field[T]) -> None:
+
+class MatrixRing(Ring[T]):
+    def __init__(self, rows: int, cols: int, coeff_field: Field[T]) -> None:
+        self.rows = rows
+        self.cols = cols
+        self.coeff_field = coeff_field
+
+    def num_elems(self) -> int:
+        coeff_size = self.coeff_field.num_elems()
+        if coeff_size == -1:
+            return -1
+        return coeff_size ** (self.rows * self.cols)
+
+    def elems(self) -> None:
+        raise NotImplementedError
+
+    def elem_of(self, x: FieldElem[T]) -> "Matrix[T]":
+        raise NotImplementedError
+
+    def one(self) -> "Matrix[T]":
+        if self.rows != self.cols:
+            raise RuntimeError("")
+        return SquareMatrix.identity(self.rows, self.coeff_field)
+
+    def zero(self):
+        return Matrix.zero(self.rows, self.cols, self.coeff_field)
+
+    def eq(self, other: object) -> bool:
+        return isinstance(other, MatrixRing) and self.rows == other.rows and self.cols == other.cols
+    
+    def hash(self) -> int:
+        return hash((self.rows, self.cols, self.coeff_field))
+
+    def to_str(self) -> str:
+        return f"M[{self.rows}, {self.cols}]"
+
+
+class Matrix(RingElem[List[List[T]]], Generic[T]):
+    def __init__(self, rows: int, cols: int, data: List[FieldElem[T]]) -> None:
+        if rows < 0 or cols < 0:
+            raise ValueError("")
+        if not len(data):
+            raise ValueError("")
         self.rows = rows
         self.cols = cols
         self.data = data
-        self.coeff_field = coeff_field
-        self._lu_factor: Tuple["Self[T]", "Self[T]", List[int]] = None
+        self._coeff_field = data[0].container()
+        super().__init__(MatrixRing[T](self.rows, self.cols, self._coeff_field))
         
     def shape(self) -> Tuple[int, int]:
         return (self.rows, self.cols)
 
-    def add(self, rhs: "Self[T]") -> "Self[T]":
+    def add(self, rhs: Self) -> Self:
         assert self.shape() == rhs.shape()
         data = list(a + b for a,b in zip(self.data, rhs.data))
-        return Matrix[T](self.rows, self.cols, data, self.coeff_field)
+        return Matrix[T](self.rows, self.cols, data)
     
-    def neg(self) -> "Self[T]":
-        return Matrix(self.rows, self.cols, [-e for e in self.data], self.coeff_field)
+    def neg(self) -> Self:
+        return Matrix(self.rows, self.cols, [-e for e in self.data])
     
-    def mul(self, rhs: "Self[T]") -> "Self[T]":
+    def mul(self, rhs: Self) -> Self:
         assert self.cols == rhs.rows
-        m = self.zero(self.rows, rhs.cols, self.coeff_field)
+        m = self._container.zero()
         for i in range(self.rows):
             for j in range(rhs.cols):
                 for k in range(self.cols):
@@ -40,19 +82,22 @@ class Matrix(RingElem[T]):
             return wrap(" ".join(str(self[i, j]) for j in range(self.cols)))
         return wrap("\n".join(row_to_str(i) for i in range(self.rows)))
     
-    def copy(self, shallow: bool=True) -> "Self[T]":
+    def copy(self, shallow: bool=True) -> Self:
         data = None
         if shallow:
             data = [d for d in self.data]
         else:
             data = [d.copy() for d in self.data]
-        return Matrix[T](self.rows, self.cols, data, self.coeff_field)
+        return Matrix[T](self.rows, self.cols, data)
     
     def eq(self, other: object) -> bool:
         return isinstance(other, Matrix) and \
             self.rows == other.rows and \
             self.cols == other.cols and \
             all(a == b for a,b in zip(self.data, other.data))
+            
+    def hash(self) -> int:
+        return hash((self._container, tuple(self.data)))
     
     def _offset(self, r: int, c: int) -> int:
         return self.cols * r + c
@@ -76,14 +121,14 @@ class Matrix(RingElem[T]):
         else:
             raise TypeError("indices must be int or slice")
         
-    def _slice(self, r_range: range, c_range: range) -> "Self[T]":
+    def _slice(self, r_range: range, c_range: range) -> Self:
         rows, cols = 0, 0
         data = []
         for i in r_range:
             for j in c_range:
                 e = self.data[self._offset(i, j)]
                 data.append(e)
-        return Matrix[T](rows, cols, data, self.coeff_field)
+        return Matrix[T](rows, cols, data)
     
     def __getitem__(self, key: tuple) -> Union[FieldElem[T], Self]:
         r_idx, c_idx = self._check_idx(key)
@@ -102,11 +147,11 @@ class Matrix(RingElem[T]):
         self.data[i] = value
     
     @classmethod
-    def zero(cls, rows: int, cols: int, coeff_field: Field[T]) -> "Self[T]":
-        return cls(rows, cols, [coeff_field.zero() for _ in range(rows * cols)], coeff_field)
+    def zero(cls, rows: int, cols: int, coeff_field: Field[T]) -> Self:
+        return cls(rows, cols, [coeff_field.zero() for _ in range(rows * cols)])
     
     @classmethod
-    def from_rows(cls, row_data: List[List[FieldElem[T]]], field: Field[T]) -> "Self[T]":
+    def from_rows(cls, row_data: List[List[FieldElem[T]]]) -> Self:
         rows = len(row_data)
         cols = 0
         if rows == 0:
@@ -119,26 +164,28 @@ class Matrix(RingElem[T]):
                     raise ValueError()
         if cols == 0:
             raise ValueError()
-        return cls(rows, cols, [c for r in row_data for c in r], field)
+        return cls(rows, cols, [c for r in row_data for c in r])
     
 
 class SquareMatrix(Matrix[T], FieldElem[T]):
-    def __init__(self, rows: int, cols: int, data: List[FieldElem[T]], coeff_field: Field[T]) -> None:
-        super().__init__(rows, cols, data, coeff_field)
-        if self.rows != self.cols:
+    def __init__(self, data: List[FieldElem[T]]) -> None:
+        n = math.sqrt(len(data))
+        if not n.is_integer():
             raise ValueError("")
+        super().__init__(n, n, data)
+        self._lu_factor: Tuple[Self, Self, List[int]] = None
     
-    def _compute_lu(self) -> Tuple[List[int], "Self[T]", "Self[T]"]:
+    def _compute_lu(self) -> Tuple[List[int], Self, Self]:
         rows, cols = self.rows, self.cols
         A = self.copy()
-        L = self.zero(rows, cols, self.coeff_field)
-        U = self.zero(rows, cols, self.coeff_field)
+        L = self.zero(rows, cols, self._coeff_field)
+        U = self.zero(rows, cols, self._coeff_field)
         P = [i for i in range(rows)]
         
         for k in range(cols):
             found = False
             for i in range(k, rows):
-                if A[P[i], k] != self.coeff_field.zero():
+                if A[P[i], k] != self._coeff_field.zero():
                     if i != k:
                         P[k], P[i] = P[i], P[k]
                     found = True
@@ -152,55 +199,55 @@ class SquareMatrix(Matrix[T], FieldElem[T]):
             for j in range(cols):
                 U[k, j] = A[P[k], j]
                 
-            L[P[k], k] = self.coeff_field.one()
+            L[P[k], k] = self._coeff_field.one()
             for i in range(k+1, rows):
                 L[P[i], k] = A[P[i], k] / pivot
                 
             for i in range(k+1, rows):
                 m = L[P[i], k]
                 for j in range(k+1, cols):
-                    A[P[i], j] = A[P[i], j] - m * A[P[k], j]
+                    A[P[i], j] -= m * A[P[k], j]
         
         return P, L, U
     
-    def _solve_lower(self, L: "Self[T]", b: "Self[T]", permute: List[int]) -> "Matrix[T]":
+    def _solve_lower(self, L: Self, b: Self, permute: List[int]) -> "Matrix[T]":
         assert b.cols == 1
         assert b.rows == L.rows
         
         n = L.rows
         b = b.copy()
-        y = Matrix[T].zero(n, 1, self.coeff_field)
+        y = Matrix[T].zero(n, 1, self._coeff_field)
         for j in range(n):
             elt = b[permute[j], 0] / L[permute[j], j]
             y[j, 0] = elt
             
             for i in range(j+1, n):
-                b[permute[i], 0] = b[permute[i], 0] - L[permute[i], j] * elt
+                b[permute[i], 0] -= L[permute[i], j] * elt
         
         return y
 
-    def _solve_upper(self, U: "Self[T]", y: "Self[T]") -> "Matrix[T]":
+    def _solve_upper(self, U: Self, y: Self) -> "Matrix[T]":
         assert y.rows == U.rows
         assert y.cols == 1
         
         n = U.rows
         y = y.copy()
-        x = Matrix[T].zero(n, 1, self.coeff_field)
+        x = Matrix[T].zero(n, 1, self._coeff_field)
         for j in reversed(range(n)):
             elt = y[j, 0] / U[j, j]
             x[j, 0] = elt
             
             for i in reversed(range(0, j)):
-                y[i, 0] = y[i, 0] - U[i, j] * elt
+                y[i, 0] -= U[i, j] * elt
                 
         return x
     
-    def lu_factor(self) -> Tuple["Self[T]", "Self[T]", List[int]]:
+    def lu_factor(self) -> Tuple[Self, Self, List[int]]:
         if not self._lu_factor:
             self._lu_factor = self._compute_lu()
         return self._lu_factor
     
-    def solve(self, b: "Self[T]") -> "Matrix[T]":
+    def solve(self, b: Self) -> "Matrix[T]":
         assert b.cols == 1
         assert self.rows == b.rows
         P, L, U = self.lu_factor()
@@ -208,23 +255,23 @@ class SquareMatrix(Matrix[T], FieldElem[T]):
         x = self._solve_upper(U, y)
         return x
     
-    def invert(self) -> "Self[T]":
+    def invert(self) -> Self:
         n = self.rows
-        inv = self.zero(n, n, self.coeff_field)
+        inv = self.zero(n, n, self._coeff_field)
         for j in range(n):
-            b = self.zero(n, 1, self.coeff_field)
-            b[j, 0] = self.coeff_field.one()
+            b = self.zero(n, 1, self._coeff_field)
+            b[j, 0] = self._coeff_field.one()
             x = self.solve(b)
             for i in range(n):
                 inv[i, j] = x[i, 0]
         return inv
     
-    def divmod(self, rhs: "Self") -> Tuple["Self", "Self"]:
-        return self * rhs.invert(), self.zero(self.rows, self.cols, self.coeff_field)
+    def divmod(self, rhs: Self) -> Tuple[Self, Self]:
+        return self * rhs.invert(), self.zero(self.rows, self.cols, self._coeff_field)
     
     @classmethod
-    def identity(cls, n: int, coeff_field: Field[T]) -> "Self[T]":
+    def identity(cls, n: int, coeff_field: Field[T]) -> Self:
         data = [coeff_field.zero() for _ in range(n ** 2)]
         for i in range(0, n ** 2, n):
             data[i] = coeff_field.one()
-        return cls(n, n, data, coeff_field)
+        return cls(data)

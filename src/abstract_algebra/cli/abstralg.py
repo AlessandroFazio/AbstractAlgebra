@@ -3,6 +3,7 @@ from cloup import Context, HelpFormatter, Style, HelpTheme
 import cloup
 
 from abstract_algebra.applications.coding_theory.cksum import Checksum
+from abstract_algebra.applications.coding_theory.reed_solomon import ReedSolomonCodec
 
 
 CONTEXT_SETTINGS = Context.settings(
@@ -27,20 +28,32 @@ CONTEXT_SETTINGS = Context.settings(
 
 
 @cloup.group()
-def cli() -> None:
+def abstralg() -> None:
     pass
 
-
-@cli.command("checksum", aliases=["cksum"])
+@abstralg.command("checksum", aliases=["cksum"])
 @cloup.argument("data", type=str, required=True)
-def cli_checksum(data: str) -> None:
-    checksum = Checksum.from_bytes(data.encode("utf-8"))
+def abstralg_checksum(data: str) -> None:
+    checksum = Checksum.of(data.encode("utf-8"))
     click.secho(f"{checksum} {len(data)}")
     
+@abstralg.command("reed-solomon", aliases=["rs"])
+@cloup.argument("data", type=str, required=True)
+@cloup.option("-r", "--code-rate", "code_rate", type=float, default=0.80, show_default=True)
+@cloup.option("-d", "--decode", "decode", type=bool, is_flag=True, default=False, show_default=True)
+def abstralg_reed_solomon(data: str, code_rate: float, decode: bool) -> None:
+    rs = ReedSolomonCodec.of(code_rate)
+    out = None
+    if decode:
+        out = rs.decode(bytes.fromhex(data))
+        click.secho(f"{out.decode('utf-8')} {len(out)}")
+    else:
+        out = rs.encode(data.encode("utf-8")) 
+        click.secho(f"{out.hex()} {len(out)}")
     
 def run() -> None:
     try:
-        cli()
+        abstralg()
     except Exception as e:
         raise e
     

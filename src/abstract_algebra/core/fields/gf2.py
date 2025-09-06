@@ -1,10 +1,10 @@
 from typing import Iterator, Tuple
 from typing_extensions import Self
-from abstract_algebra.core.groups.fields.base import Field, FieldElem
+from abstract_algebra.core.fields.base import Field, FieldElem
 from abstract_algebra.utils.binary import BinaryUtils
 
 
-class GF2(Field[int]):
+class GF2Field(Field[int]):
     def __init__(self, k: int, q: int) -> None:
         if k < 1:
             raise ValueError("")
@@ -16,24 +16,36 @@ class GF2(Field[int]):
     def num_elems(self) -> int:
         return 1 << self.k
     
-    def elems(self) -> Iterator["GF2Elem"]:
+    def elems(self) -> Iterator["GF2"]:
         for i in range(self.num_elems()):
-            yield GF2Elem(i, self) 
+            yield GF2(i, self) 
     
-    def of(self, x: int) -> "FieldElem[int]":
+    def elem_of(self, x: int) -> "GF2":
         if x < 0 or x >= self.num_elems():
             raise ValueError("")
-        return GF2Elem(x, self)
+        return GF2(x, self)
     
-    def one(self) -> "FieldElem[int]":
-        return GF2Elem(1, self)
+    def one(self) -> "GF2":
+        return GF2(1, self)
     
-    def zero(self) -> "FieldElem[int]":
-        return GF2Elem(0, self)
+    def zero(self) -> "GF2":
+        return GF2(0, self)
+    
+    def eq(self, other: object) -> bool:
+        return isinstance(other, GF2Field) and self.k == other.k and self.q == self.q
+    
+    def hash(self) -> int:
+        return hash((self.k, self.q))
 
+    def to_str(self) -> str:
+        return f"GF({self.num_elems()})"
+    
+    @classmethod
+    def of(cls, k: int, q: int) -> "GF2Field":
+        return cls(k, q)
 
-class GF2Elem(FieldElem[int]):
-    def __init__(self, x: int, field: "GF2") -> None:
+class GF2(FieldElem[int]):
+    def __init__(self, x: int, field: "GF2Field") -> None:
         self.x = x
         super().__init__(field)
     
@@ -47,32 +59,33 @@ class GF2Elem(FieldElem[int]):
         return a ^ b
     
     def _mul_raw(self, a: int, b: int) -> "int":
-        k, q = self.field.k, self.field.q
+        f = self._container
+        assert isinstance(f, GF2Field)
         c = 0
-        for i in range(k):
+        for i in range(f.k):
             if BinaryUtils.bit_at(b, i):
                 c ^= a
             a <<= 1
-            if BinaryUtils.bit_at(a, k):
-                a ^= q
+            if BinaryUtils.bit_at(a, f.k):
+                a ^= f.q
         return c
     
     def _divmod_raw(self, a: int, b: int) -> Tuple["int", "int"]:
-        dividend, divisor = a, b
-        if divisor == 0:
+        dvd, div = a, b
+        if div == 0:
             raise ZeroDivisionError("")
         
-        divisor_deg = divisor.bit_length() - 1
-        dividend_deg = dividend.bit_length() - 1
-        quotient = 0
+        dvd_deg = dvd.bit_length() - 1
+        div_deg = div.bit_length() - 1
+        q = 0
         
-        while dividend_deg >= divisor_deg:
-            shift = dividend_deg - divisor_deg
-            quotient ^= 1 << (shift)
-            dividend ^= divisor << shift
-            dividend_deg = dividend.bit_length() - 1
-        
-        return quotient, dividend
+        while dvd_deg >= div_deg:
+            shift = dvd_deg - div_deg
+            q ^= 1 << (shift)
+            dvd ^= div << shift
+            dvd_deg = dvd.bit_length() - 1
+            
+        return q, dvd
 
     def _gcd_raw(self, a: int, b: int) -> Tuple["int", "int", "int"]:
         if b == 0:
@@ -88,37 +101,40 @@ class GF2Elem(FieldElem[int]):
     
     def add(self, rhs: "Self") -> "Self":
         s = self._add_raw(self.x, rhs.x)
-        return self.field.of(s)
+        return self._container.elem_of(s)
     
     def neg(self) -> "Self":
         neg = self._neg_raw(self.x)
-        return self.field.of(neg)
+        return self._container.elem_of(neg)
     
     def mul(self, rhs: "Self") -> "Self":
         m = self._mul_raw(self.x, rhs.x)
-        return self.field.of(m)
+        return self._container.elem_of(m)
     
     def divmod(self, rhs: "Self") -> Tuple["Self", "Self"]:
-        f = self.field
+        f = self._container
         q, r = self._divmod_raw(self.x, rhs.x)
-        return f.of(q), f.of(r)
+        return f.elem_of(q), f.elem_of(r)
         
     def gcd(self, rhs: "Self") -> Tuple["Self", "Self", "Self"]:
         r, x, y = self._gcd_raw(self.x, rhs.x)
-        f = self.field
-        return f.of(r), f.of(x), f.of(y)
+        f = self._container
+        return f.elem_of(r), f.elem_of(x), f.elem_of(y)
     
     def invert(self) -> "Self":
-        f = self.field
-        assert isinstance(f, GF2)
+        f = self._container
+        assert isinstance(f, GF2Field)
         _, x, _ = self._gcd_raw(self.x, f.q)
-        return f.of(x)
+        return f.elem_of(x)
             
     def eq(self, other: object) -> bool:
-        return other is self or (isinstance(other, GF2Elem) and self.x == other.x)
+        return other is self or (isinstance(other, GF2) and self.x == other.x)
+    
+    def hash(self) -> int:
+        return hash((self._container, self.x))
     
     def copy(self) -> "Self":
-        return GF2Elem(self.x, self.field)
+        return GF2(self.x, self._container)
     
     def to_str(self) -> str:
-        return f"GF2({self.x})"
+        return str(self.x)

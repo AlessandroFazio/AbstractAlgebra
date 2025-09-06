@@ -16,4 +16,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-abstract-algebra = "abstract_algebra.cli.cli:run"
+abstralg = "abstract_algebra.cli.abstralg:run"

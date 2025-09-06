@@ -14,6 +14,35 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             }
+        },
+        {
+            "name": "Python: abstralg rs [encode]",
+            "type": "debugpy",
+            "request": "launch",
+            "program": ".venv/bin/poetry",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "run",
+                "abstralg",
+                "rs",
+                "I Love Abstract Algebra"
+            ]
+        },
+        {
+            "name": "Python: abstralg rs [decode]",
+            "type": "debugpy",
+            "request": "launch",
+            "program": ".venv/bin/poetry",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "run",
+                "abstralg",
+                "rs",
+                "-d",
+                "1749278c8eab0c30ec7ab34e59852a5f5bd90b2d9f665c9f1e4d206b0ce63981edfd188c615be223b63070e7e7ce64208c2ccb929a835e9d478e2828f1a17e6b4154ea1f21eaa8085bc3a014191250fc239245d2bd4b09c2655d5228a9883a585bb7d6f488252b42f301cf71b68aefce62be6dd9c443d19aa82eab4ec9788d4ab17ecd727cca4e2badf157f2fcafe57946370c80e450507559b1fc10cfa2fa558e81c6587914759a11c2091557d8f7e0a85f10f5d51a38626f421e6266c7c1710dbfb1e9d9b24bbc420a70dcd13b1fada539668a3db05c17e65a0ffad61ba14b1f15aa1bb8e7b8d1989fbde8650775d0655358a18b7a920609eefa6b35883ae7bb"
+            ]
         }
     ]
 }

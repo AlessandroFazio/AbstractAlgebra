@@ -31,7 +31,7 @@ class CRC:
 
 class Checksum:
     @classmethod
-    def from_bytes(cls, data: bytes) -> int:
+    def of(cls, data: bytes) -> int:
         crc = CRC()
         for b in data:
             crc.append_byte(b)
