@@ -1,0 +1,10 @@
+codecs:
+  - kind: reed_solomon
+    code_rate: 0.80
+
+  - kind: symmetric_crypto
+    mode: "ecb"
+    cipher: "aes"
+    key: !!binary |
+      AAECAwQFBgcICQoLDA0ODw==
+  

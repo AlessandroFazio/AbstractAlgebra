@@ -16,7 +16,7 @@
             }
         },
         {
-            "name": "Python: abstralg rs [encode]",
+            "name": "Python: codechain encode",
             "type": "debugpy",
             "request": "launch",
             "program": ".venv/bin/poetry",
@@ -24,13 +24,15 @@
             "justMyCode": true,
             "args": [
                 "run",
-                "abstralg",
-                "rs",
+                "codechain",
+                "encode",
+                "-f",
+                "./tests/data/test_pipeline.yaml",
                 "I Love Abstract Algebra"
             ]
         },
         {
-            "name": "Python: abstralg rs [decode]",
+            "name": "Python: codechain decode",
             "type": "debugpy",
             "request": "launch",
             "program": ".venv/bin/poetry",
@@ -38,11 +40,12 @@
             "justMyCode": true,
             "args": [
                 "run",
-                "abstralg",
-                "rs",
-                "-d",
-                "1749278c8eab0c30ec7ab34e59852a5f5bd90b2d9f665c9f1e4d206b0ce63981edfd188c615be223b63070e7e7ce64208c2ccb929a835e9d478e2828f1a17e6b4154ea1f21eaa8085bc3a014191250fc239245d2bd4b09c2655d5228a9883a585bb7d6f488252b42f301cf71b68aefce62be6dd9c443d19aa82eab4ec9788d4ab17ecd727cca4e2badf157f2fcafe57946370c80e450507559b1fc10cfa2fa558e81c6587914759a11c2091557d8f7e0a85f10f5d51a38626f421e6266c7c1710dbfb1e9d9b24bbc420a70dcd13b1fada539668a3db05c17e65a0ffad61ba14b1f15aa1bb8e7b8d1989fbde8650775d0655358a18b7a920609eefa6b35883ae7bb"
+                "codechain",
+                "decode",
+                "-f",
+                "./tests/data/test_pipeline.yaml",
+                "43465031010000000002040000001bcbe33f03130000006d73675f6c656e677468003c0000000000000004000000000500010000004034a8a706721212329b33efc0529117ffad08d985fd237813c88760e366cdc099fed5e9dd44dc0e991772355fd2ea4b494d8aaef6c11f9044b8b268caded6078b0169b9b64866cb7e8f9b9222af04dc0e8023afe17f7f6de16125060f1a17eba335a9d02d91c3a4127e76a2500b7ad210d7678a209b3c1ee039b609d357df811c325d7c66263c1686ca3fdabb36f478eebe4e056bb9ddee0150da8ea84abdc7f744f8b06416b97044e32ab22e3006adf49a34fe40ecf34b1554e71c69f4eeaf4a3cc09e3b12d4c77c402c4fa588d46d42e7bc18778d4d1057ae1fff2fcef54c30fa7caff867c030d1c33c44b55dd205b783a48d432728ebf8127118c46edc"
             ]
-        }
+        },
     ]
 }
