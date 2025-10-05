@@ -1,23 +1,15 @@
 from typing import Union, Optional
 import os
 
-# Your framework imports
 from codechain.core.base import Codec
 from codechain.core.pipeline import CodecPipeline
 
-# Crypto primitives & modes
 from codechain.core.crypto.ciphers.aes import AES
 from codechain.core.crypto.ciphers.modes.ecb import ECBMode
 from codechain.core.crypto.ciphers.modes.cbc import CBCMode
 from codechain.core.crypto.sym import SymmetricCryptoCodec
-
-# Padding schemes
-from codechain.core.padding import PKCS7  # extend later (ansi-x923, iso7816)
-
-# FEC
+from codechain.core.padding import PKCS7
 from codechain.core.fec.reed_solomon import ReedSolomonCodec
-
-# Typed specs
 from codechain.core.models import (
     CodecSpec,
     CodecPipelineSpec,
